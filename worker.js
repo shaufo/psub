@@ -2918,7 +2918,7 @@ var src_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const host = url.origin;
-    const frontendUrl = 'https://raw.githubusercontent.com/shaufo/psub/main/frontend.html';
+    const frontendUrl = 'https://raw.githubusercontent.com/shaufo/psub/main/frontend_old.html';
     const SUB_BUCKET = env.SUB_BUCKET;
     let backend = env.BACKEND.replace(/(https?:\/\/[^/]+).*$/, "$1");
     const subDir = "subscription";
@@ -3224,42 +3224,35 @@ function replaceHysteria(link, replacements) {
   return link.replace(server, randomDomain);
 }
 function replaceHysteria2(link, replacements) {
-    const regexMatch = link.match(/hysteria2:\/\/(.*?)@(.*?):(\d+)(\/\?[^#]*)(#.*)?/);
+    const regexMatch = link.match(/hysteria2:\/\/(.*?)@(.*?)(?::(\d+))?(\/\?[^#]*)(#.*)?/);
     if (!regexMatch) {
-        return;
+        return; // 如果不符合格式，不进行任何操作
     }
 
     let [auth, hostname, port, queryString, fragment] = regexMatch.slice(1);
 
-    // 生成随机字符串用于替换敏感信息
+    // 如果端口号不存在，则默认为443
+    port = port || '443';
+
+    // 替换认证信息
     const randomAuth = generateRandomStr(12);
-    const randomHostname = generateRandomStr(12) + ".com";
-    const randomPort = Math.floor(Math.random() * 65535);
-
-    // 记录替换
-    replacements[randomAuth] = auth;
-    replacements[randomHostname] = hostname;
-    replacements[randomPort] = port;
-
-    // 替换认证信息、服务器地址和端口
+    replacements[auth] = randomAuth;
     auth = randomAuth;
-    hostname = randomHostname;
-    port = randomPort;
 
-    // 检查并替换混淆密码
-    if (queryString.includes('obfs=salamander')) {
-        const passwordMatch = queryString.match(/obfs-password=([^&]*)/);
-        if (passwordMatch) {
-            const originalPassword = passwordMatch[1];
-            const randomPassword = generateRandomStr(12);
-            queryString = queryString.replace(`obfs-password=${originalPassword}`, `obfs-password=${randomPassword}`);
-            replacements[randomPassword] = originalPassword;
-        }
-    }
+    // 强制生成随机字符串用于替换服务器地址
+    const randomHostname = generateRandomStr(12) + ".com";
+    replacements[hostname] = randomHostname;
+    hostname = randomHostname;
+
+    // 替换服务器端口
+    const randomPort = Math.floor(Math.random() * 65535);
+    replacements[port] = randomPort.toString();
+    port = randomPort;
 
     // 重构链接
     return `hysteria2://${auth}@${hostname}:${port}${queryString}${fragment || ''}`;
 }
+
 function replaceYAML(yamlObj, replacements) {
   if (!yamlObj.proxies) {
     return;
